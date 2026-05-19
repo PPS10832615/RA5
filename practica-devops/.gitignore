@@ -1,2 +1,19 @@
-*.box
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+
+# Vagrant / VirtualBox
+.vagrant/
 *.ova
+*.vbox
+*.vdi
+
+# Logs y SO
+*.log
+.DS_Store
+
+# Jenkins temporales
+*@tmp/
+*@tmp

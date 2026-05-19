@@ -1,65 +1,90 @@
 pipeline {
+    // 'agent any' indica que el pipeline puede ejecutarse en cualquier agente disponible
     agent any
 
     stages {
+        
+        // FASE 1: Preparación del entorno de Infraestructura como Código (IaC)
         stage('1. Terraform Init') {
             steps {
-                echo 'Inicializando Terraform...'
-                // Usamos la imagen oficial de Terraform en Docker
-                sh 'docker run --rm -v ${WORKSPACE}/terraform:/app -w /app hashicorp/terraform:latest init'
+                echo 'Inicializando Terraform de forma nativa en WSL...'
+                // Cambia el directorio de trabajo a la carpeta 'terraform'
+                dir('terraform') {
+                    // Descarga los plugins y providers necesarios
+                    sh 'terraform init'
+                }
             }
         }
 
+        // FASE 2: Despliegue de la infraestructura
         stage('2. Terraform Apply') {
             steps {
-                echo 'Levantando la máquina virtual en VirtualBox...'
-                sh 'docker run --rm -v ${WORKSPACE}/terraform:/app -w /app hashicorp/terraform:latest apply -auto-approve'
+                echo 'Levantando la VM en VirtualBox usando el puente mágico...'
+                dir('terraform') {
+                    // Esto importa la OVA, configura la red NAT y arranca la VM
+                    sh 'terraform apply -auto-approve'
+                }
             }
         }
 
-        stage('3. Esperar SSH') {
+        // FASE 3: Tiempo de gracia y configuración fantasma de SSH
+        stage('3. Esperar y Configurar SSH') {
             steps {
-                echo 'Dando tiempo a Ubuntu para que encienda sus servicios...'
-                sh 'sleep 45'
+                echo 'Dando tiempo a Ubuntu para encender el sistema operativo...'
+                // Pausa el pipeline 90 segundos para que la VM termine de cargar
+                sh 'sleep 90'
+                
+                echo 'Inyectando instalación de SSH silenciosa vía VBoxManage...'
+                // Usa las Guest Additions de VirtualBox para entrar a la máquina sin red
+                // 1. Ejecuta una terminal bash con el usuario y contraseña por defecto.
+                // 2. Detiene los servicios de actualización automática para liberar el candado (lock) de apt.
+                // 3. Instala el servidor SSH sin pedir confirmación.
+                sh '''
+                VBoxManage guestcontrol "ubuntu-servidor-ansible" run \
+                  --exe "/bin/bash" \
+                  --username "osboxes" \
+                  --password "osboxes.org" \
+                  --wait-stdout \
+                  -- -c "echo 'osboxes.org' | sudo -S sh -c 'systemctl stop unattended-upgrades apt-daily.service apt-daily-upgrade.service; apt-get update; apt-get install -y openssh-server'"
+                '''
             }
         }
 
+        // FASE 4: Gestión de la configuración con Ansible contenido
         stage('4. Ansible Deploy') {
             steps {
-                echo 'Configurando Apache, Prometheus y Grafana...'
-                // Construimos la imagen de Ansible al vuelo por si acaso
-                sh 'docker build -t ansible-img -f docker/Dockerfile.ansible .'
-                
-                // Ejecutamos el playbook usando la red del host para que encuentre el túnel
-                sh '''
-                docker run --rm \
-                  --network host \
-                  -v ${WORKSPACE}/ansible:/ansible \
-                  -v /root/.ssh:/root/.ssh:ro \
-                  ansible-img \
-                  -i inventory.ini playbook.yml
-                '''
+                echo 'Desplegando infraestructura con Docker Ansible...'
+                // Se mueve al directorio raíz del proyecto
+                dir("${PROYECTO_DIR}") {
+                    // Construye una imagen Docker basada en Alpine que contiene Ansible
+                    sh 'docker build -t ansible-img -f docker/Dockerfile.ansible .'
+                    
+                    // Ejecuta el contenedor:
+                    // -v: Monta el directorio local de ansible en modo lectura/escritura
+                    // Ataca directamente a la IP local definida en inventory.ini
+                    sh '''
+                    docker run --rm \
+                      -v ${PROYECTO_DIR}/ansible:/ansible \
+                      -v /root/.ssh:/root/.ssh:ro \
+                      ansible-img \
+                      -i inventory.ini playbook.yml
+                    '''
+                }
             }
         }
 
+        // FASE 5: Pruebas de humo (Smoke Tests)
         stage('5. Verificación') {
             steps {
-                echo 'Verificando que los servicios responden correctamente...'
+                echo 'Verificando servicios en la IP de Windows...'
+                // Lanza peticiones curl apuntando a la IP real del anfitrión (192.168.1.129)
+                // Busca el código de estado HTTP para confirmar que los puertos mapeados en VirtualBox responden
                 sh '''
-                    echo "Estado Apache2:    $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080)"
-                    echo "Estado Prometheus: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9090)"
-                    echo "Estado Grafana:    $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000)"
+                    echo "Estado Apache2:    $(curl -s -o /dev/null -w '%{http_code}' http://192.168.1.129:8080)"
+                    echo "Estado Prometheus: $(curl -s -o /dev/null -w '%{http_code}' http://192.168.1.129:9090)"
+                    echo "Estado Grafana:    $(curl -s -o /dev/null -w '%{http_code}' http://192.168.1.129:3000)"
                 '''
             }
-        }
-    }
-
-    post {
-        success { 
-            echo '✅ ¡Infraestructura desplegada y verificada con éxito!' 
-        }
-        failure { 
-            echo '❌ El pipeline ha fallado. Revisa los logs de los stages.' 
         }
     }
 }

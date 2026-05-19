@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado del Despliegue | DevOps RA5</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-main: #c9d1d9;
+            --accent: #58a6ff;
+            --success: #238636;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #ffffff;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        .status {
+            display: inline-block;
+            background-color: var(--success);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .tech-stack img {
+            height: 28px;
+            border-radius: 4px;
+        }
+        .links {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #0d1117;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.85em;
+            color: #8b949e;
+            border-top: 1px solid #30363d;
+            padding-top: 20px;
+            line-height: 1.5;
+        }
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status">🚀 SISTEMA EN LÍNEA</div>
+        
+        <h1>¡Infraestructura Desplegada!</h1>
+        <p>El servidor web ha sido provisionado y configurado de forma <strong>100% automatizada</strong>.</p>
+        
+        <div class="tech-stack">
+            <img src="https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white" alt="Terraform">
+            <img src="https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white" alt="Ansible">
+            <img src="https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white" alt="Jenkins">
+            <img src="https://img.shields.io/badge/Apache2-D22128?style=for-the-badge&logo=apache&logoColor=white" alt="Apache">
+        </div>
+
+        <div class="links">
+            <p style="margin: 0 0 10px 0; color: #8b949e; font-size: 0.9em;">Acceso a la monitorización del sistema:</p>
+            📊 <a href="http://localhost:3000" target="_blank">Grafana Dashboards</a> &nbsp;|&nbsp; 
+            📈 <a href="http://localhost:9090" target="_blank">Prometheus Metrics</a>
+        </div>
+
+        <div class="footer">
+            Práctica RA5 de DevOps • IES El Caminás<br>
+            Desarrollado por Roberto Pecurto Escrig
+        </div>
+    </div>
+</body>
+</html>

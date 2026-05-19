@@ -5,13 +5,12 @@ services:
     container_name: jenkins
     user: root
     ports:
-      - "8090:8080"
-      - "50000:50000"
+      - "8090:8080"                             # Mapea la interfaz web al puerto 8090 de tu equipo
+      - "50000:50000"                           # Puerto de comunicación para nodos/agentes secundarios
     volumes:
-      - jenkins_home:/var/jenkins_home
-      # Esto es vital para que Jenkins pueda lanzar contenedores de Ansible/Terraform por dentro
-      - /var/run/docker.sock:/var/run/docker.sock
-    privileged: true
+      - jenkins_home:/var/jenkins_home          # Volumen persistente: no pierdes los jobs ni plugins al reiniciar
+      - /var/run/docker.sock:/var/run/docker.sock # Docker-out-of-Docker: Permite a Jenkins lanzar contenedores
+    privileged: true                            # Otorga permisos al contenedor
 
 volumes:
   jenkins_home:
