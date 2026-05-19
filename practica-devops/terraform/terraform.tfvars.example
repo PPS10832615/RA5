@@ -1,0 +1,8 @@
+# Ruta al ejecutable de VBoxManage en el sistema (la de por defecto en Windows)
+vboxmanage_path = "C:/Program Files/Oracle/VirtualBox/VBoxManage.exe"
+
+# Ruta local absoluta donde el profesor tenga guardado el archivo .ova de la máquina
+ova_source_path = "C:/Ruta/Hacia/Tu/Archivo/ubuntu-servidor.ova"
+
+# Nombre que recibirá la máquina virtual dentro de la interfaz de VirtualBox
+vm_name = "ubuntu-server"

@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('1. Terraform Init') {
+            steps {
+                echo 'Inicializando Terraform...'
+                // Usamos la imagen oficial de Terraform en Docker
+                sh 'docker run --rm -v ${WORKSPACE}/terraform:/app -w /app hashicorp/terraform:latest init'
+            }
+        }
+
+        stage('2. Terraform Apply') {
+            steps {
+                echo 'Levantando la máquina virtual en VirtualBox...'
+                sh 'docker run --rm -v ${WORKSPACE}/terraform:/app -w /app hashicorp/terraform:latest apply -auto-approve'
+            }
+        }
+
+        stage('3. Esperar SSH') {
+            steps {
+                echo 'Dando tiempo a Ubuntu para que encienda sus servicios...'
+                sh 'sleep 45'
+            }
+        }
+
+        stage('4. Ansible Deploy') {
+            steps {
+                echo 'Configurando Apache, Prometheus y Grafana...'
+                // Construimos la imagen de Ansible al vuelo por si acaso
+                sh 'docker build -t ansible-img -f docker/Dockerfile.ansible .'
+                
+                // Ejecutamos el playbook usando la red del host para que encuentre el túnel
+                sh '''
+                docker run --rm \
+                  --network host \
+                  -v ${WORKSPACE}/ansible:/ansible \
+                  -v /root/.ssh:/root/.ssh:ro \
+                  ansible-img \
+                  -i inventory.ini playbook.yml
+                '''
+            }
+        }
+
+        stage('5. Verificación') {
+            steps {
+                echo 'Verificando que los servicios responden correctamente...'
+                sh '''
+                    echo "Estado Apache2:    $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080)"
+                    echo "Estado Prometheus: $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9090)"
+                    echo "Estado Grafana:    $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000)"
+                '''
+            }
+        }
+    }
+
+    post {
+        success { 
+            echo '✅ ¡Infraestructura desplegada y verificada con éxito!' 
+        }
+        failure { 
+            echo '❌ El pipeline ha fallado. Revisa los logs de los stages.' 
+        }
+    }
+}

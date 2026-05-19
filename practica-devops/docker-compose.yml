@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    ports:
+      - "8090:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Esto es vital para que Jenkins pueda lanzar contenedores de Ansible/Terraform por dentro
+      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
+
+volumes:
+  jenkins_home:

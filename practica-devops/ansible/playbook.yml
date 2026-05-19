@@ -1,0 +1,125 @@
+---
+- hosts: web
+  become: true
+
+  handlers:
+    - name: Reboot Prometheus
+      service:
+        name: prometheus
+        state: restarted
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Install Apache2, Prometheus and node_exporter
+      apt:
+        name:
+          - apache2
+          - prometheus
+          - prometheus-node-exporter
+        state: present
+
+    - name: Add GPG key of Grafana
+      apt_key:
+        url: https://apt.grafana.com/gpg.key
+        state: present
+
+    - name: Add Grafana repository
+      apt_repository:
+        repo: "deb https://apt.grafana.com stable main"
+        state: present
+        update_cache: true
+
+    - name: Install Grafana
+      apt:
+        name: grafana
+        state: present
+
+    - name: Start and enable services
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - apache2
+        - prometheus
+        - prometheus-node-exporter
+        - grafana-server
+
+    - name: Configure Prometheus to scrape node_exporter
+      copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+
+            - job_name: 'node_exporter'
+              static_configs:
+                - targets: ['localhost:9100']
+      notify: Reboot Prometheus
+
+    - name: Copy index.html to Apache
+      copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+        mode: '0644'
+      ignore_errors: true
+
+    - name: Wait for Grafana to be available
+      uri:
+        url: http://localhost:3000/api/health
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 12
+      delay: 5
+
+    - name: Add Prometheus as datasource in Grafana
+      uri:
+        url: http://localhost:3000/api/datasources
+        method: POST
+        user: admin
+        password: admin
+        force_basic_auth: true
+        body_format: json
+        body:
+          name: Prometheus
+          type: prometheus
+          url: http://localhost:9090
+          access: proxy
+          isDefault: true
+        status_code: [200, 409]
+
+    - name: Download Node Exporter Full dashboard
+      uri:
+        url: https://grafana.com/api/dashboards/1860/revisions/latest/download
+        method: GET
+        return_content: true
+      register: dashboard_json
+
+    - name: Import dashboard in Grafana
+      uri:
+        url: http://localhost:3000/api/dashboards/import
+        method: POST
+        user: admin
+        password: admin
+        force_basic_auth: true
+        body_format: json
+        body:
+          dashboard: "{{ dashboard_json.json }}"
+          overwrite: true
+          inputs:
+            - name: "DS_PROMETHEUS"
+              type: datasource
+              pluginId: prometheus
+              value: Prometheus
+          folderId: 0
+        status_code: [200]
