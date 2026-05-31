@@ -13,6 +13,10 @@ A continuación se encuentran los enlaces a la documentación detallada y el có
 | Práctica | Tecnologías Clave | Descripción |
 | :--- | :--- | :--- |
 | [**RA5_1: IaC**](./practica-devops) | `Terraform`, `Ansible`, `Jenkins`, `Docker` | Aprovisionamiento y configuración 100% desatendida de una VM en VirtualBox con Apache, Prometheus y Grafana. |
+| Práctica | Tecnologías Clave | Descripción |
+| :--- | :--- | :--- |
+| [RA5_1: IaC](./practica-devops/RA5_1_IaC) | `Terraform`, `Ansible`, `Jenkins`, `Docker` | Aprovisionamiento y configuración 100% desatendida de una VM en VirtualBox con Apache, Prometheus y Grafana. |
+| **[RA5_2: K3s HA](./practica-kubernetes)** | `K3s`, `Docker`, `Flask`, `Redis`, `Vault`, `Prometheus`, `Grafana`, `K9s` | Despliegue de un clúster híbrido en Alta Disponibilidad con monitorización avanzada, inyección de imágenes en caliente y gestión criptográfica de secretos. |
 
 ---
 

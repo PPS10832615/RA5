@@ -1,0 +1,24 @@
+# Python (Archivos compilados y caché de Flask)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Entornos virtuales locales
+venv/
+.venv/
+env/
+
+# IDEs y Editores (VS Code, JetBrains, etc.)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db
+
+# Volúmenes o empaquetados pesados de Docker/K3s
+*.tar
+*.tar.gz

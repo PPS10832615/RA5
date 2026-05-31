@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: friendlyhello
+  labels:
+    app: friendlyhello
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: friendlyhello
+  template:
+    metadata:
+      labels:
+        app: friendlyhello
+    spec:
+      containers:
+      - name: friendlyhello
+        image: friendlyhello:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: friendlyhello
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
+  selector:
+    app: friendlyhello
