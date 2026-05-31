@@ -20,6 +20,7 @@ Repositorio de prácticas progresivas sobre Kubernetes: desde el despliegue loca
 - [Práctica 1 · Hello Minikube](#práctica-1--hello-minikube)
 - [Práctica 2 · Kubernetes Basics](#práctica-2--kubernetes-basics)
 - [Práctica 3 · PoC K3s HA Cluster](#práctica-3--poc-k3s-ha-cluster)
+- [Anexo · Deploy alternativo con k3d](#anexo--deploy-alternativo-con-k3d)
 
 ---
 
@@ -450,3 +451,114 @@ k9s
 K9s es una TUI (interfaz de terminal) para Kubernetes que permite navegar recursos, ver logs y ejecutar comandos sin escribir `kubectl` constantemente. La vista de todos los namespaces muestra los 21 pods del stack completo corriendo sin reinicios.
 
 ![K9s — 21 pods running, 0 reinicios](PoC/assets/5-k9s.png)
+
+---
+
+## Anexo · Deploy alternativo con k3d
+
+> Mismo stack que la Práctica 3 pero desplegado con k3d, que automatiza la creación del clúster HA en un solo comando. Permite reproducir el entorno completo sin configuración manual de nodos.
+
+---
+
+### Diferencia respecto a la Práctica 3
+
+| | Práctica 3 | Anexo k3d |
+|---|---|---|
+| Nodo maestro | Nativo sobre Ubuntu | Contenedor Docker |
+| Configuración | Manual, nodo a nodo | Un solo comando |
+| TLS/SAN | Configuración explícita | Gestionado por k3d |
+| Reproducibilidad | Requiere setup previo | Plug & play |
+
+---
+
+### Requisitos
+
+```bash
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+k3d version
+```
+
+---
+
+### 1. Crear el clúster HA
+
+```bash
+k3d cluster create k3s-lab \
+  --servers 2 \
+  --agents 2 \
+  --wait
+```
+
+`--servers 2` levanta 2 nodos de control plane con etcd embebido. `--agents 2` añade 2 workers. `--wait` bloquea hasta que todos los nodos están `Ready`.
+
+```bash
+kubectl get nodes -o wide
+```
+
+---
+
+### 2. Prometheus + Grafana
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring --create-namespace \
+  --set grafana.adminPassword=admin
+kubectl wait --for=condition=ready pod --all -n monitoring --timeout=180s
+kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+# http://localhost:3000  |  admin / admin
+```
+
+---
+
+### 3. Vault
+
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com
+helm install vault hashicorp/vault \
+  -n vault --create-namespace \
+  --set "server.dev.enabled=true"
+kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=vault -n vault --timeout=120s
+kubectl port-forward svc/vault 8200:8200 -n vault
+# http://localhost:8200  |  Token: root
+```
+
+---
+
+### 4. Despliegue de la aplicación
+
+A diferencia de la Práctica 3, con k3d no es necesario el sideloading manual mediante pipes. k3d importa la imagen directamente en todos los nodos del clúster:
+
+```bash
+k3d image import friendlyhello:latest -c k3s-lab
+```
+
+```bash
+kubectl apply -f ~/PoC/manifests/redis.yaml
+kubectl apply -f ~/PoC/manifests/app.yaml
+kubectl wait --for=condition=available deployment/redis deployment/friendlyhello \
+  --timeout=60s
+kubectl port-forward svc/friendlyhello 8081:80
+# http://localhost:8081
+```
+
+---
+
+### 5. Observación con K9s
+
+```bash
+k9s
+# Pulsar 0 para ver todos los namespaces
+```
+
+---
+
+### Limpieza
+
+```bash
+k3d cluster delete k3s-lab
+```
+
+Elimina todos los contenedores, volúmenes y configuración del clúster en un solo comando.
