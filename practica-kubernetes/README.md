@@ -15,6 +15,12 @@
 
 Repositorio de prácticas progresivas sobre Kubernetes: desde el despliegue local con Minikube hasta un clúster K3s en alta disponibilidad con stack de observabilidad completo.
 
+## Índice
+
+- [Práctica 1 · Hello Minikube](#práctica-1--hello-minikube)
+- [Práctica 2 · Kubernetes Basics](#práctica-2--kubernetes-basics)
+- [Práctica 3 · PoC K3s HA Cluster](#práctica-3--poc-k3s-ha-cluster)
+
 ---
 
 ## Práctica 1 · Hello Minikube
