@@ -1,0 +1,15 @@
+# Python compilados
+__pycache__/
+*.py[cod]
+
+# Entornos virtuales
+venv/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# Temporales e imágenes pesadas
+*.tar
+*.tar.gz
